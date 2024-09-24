@@ -13,6 +13,7 @@ const app = new Hono<{
   }
 }>();
 
+
 const API = '/api/v1';
 
 app.route(`${API}/auth`, authRouter);

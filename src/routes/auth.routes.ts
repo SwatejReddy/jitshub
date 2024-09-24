@@ -1,6 +1,5 @@
 import { Hono } from "hono";
 import { loginUser, signupUser } from "../controllers/auth.controller";
-import { loginMiddleware } from "../middlewares/auth.middleware";
 
 export const authRouter = new Hono<{
     Bindings: {
@@ -13,4 +12,4 @@ export const authRouter = new Hono<{
 }>();
 
 authRouter.use('/signup').post(signupUser);
-authRouter.use('/login').post(loginMiddleware, loginUser);
+authRouter.use('/login').post(loginUser);

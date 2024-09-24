@@ -11,3 +11,12 @@ export const noticeRouter = new Hono<{
         userId: string
     }
 }>();
+
+// public routes
+noticeRouter.use('/all').get()
+
+
+// protected routes
+noticeRouter.use('/create').post()
+noticeRouter.use('/update/:id').post()
+noticeRouter.use('/delete/:id').post()
