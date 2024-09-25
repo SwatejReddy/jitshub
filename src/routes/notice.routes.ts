@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import { loginUser, signupUser } from "../controllers/auth.controller";
 import { loginMiddleware } from "../middlewares/auth.middleware";
+import { createNotice } from "../controllers/notice.controller";
 
 export const noticeRouter = new Hono<{
     Bindings: {
@@ -17,6 +18,6 @@ noticeRouter.use('/all').get()
 
 
 // protected routes
-noticeRouter.use('/create').post()
+noticeRouter.use('/create').post(createNotice)
 noticeRouter.use('/update/:id').post()
 noticeRouter.use('/delete/:id').post()
