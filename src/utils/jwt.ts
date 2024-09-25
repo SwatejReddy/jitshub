@@ -1,10 +1,10 @@
 import { Context } from "hono";
-import jwt from "jsonwebtoken";
+import { sign, verify } from "hono/jwt";
 
-export const generateJwtToken = (c: Context, payload: any) => {
-    return jwt.sign(payload, c.env.SECRET_KEY);
+export const generateJwtToken = async (c: Context, payload: any) => {
+    return await sign(payload, c.env.SECRET_KEY);
 }
 
-export const verifyJwtToken = (c: Context, token: string) => {
-    return jwt.verify(token, c.env.SECRET_KEY);
+export const verifyJwtToken = async (c: Context, token: string) => {
+    return await verify(token, c.env.SECRET_KEY);
 }

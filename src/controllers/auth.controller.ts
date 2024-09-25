@@ -2,10 +2,12 @@ import { Context } from "hono";
 import { ISignUp } from "../schemas/types";
 import { generateJwtToken } from "../utils/jwt";
 import { withAccelerate } from "@prisma/extension-accelerate";
-import { z } from "zod";
 import { LoginSchema, SignUpSchema } from "../schemas/zod";
 import { PrismaClient } from "@prisma/client/edge";
-import { generateSalt, hashPassword } from "../utils/auth";
+import { generateSalt, hashPassword } from "../utils/hashing";
+import ApiResponse from "../utils/ApiResponse";
+import ApiError from "../utils/ApiError";
+import { setCookie } from "hono/cookie";
 
 export const signupUser = async (c: Context) => {
     console.log(c.env.DATABASE_URL)
@@ -70,15 +72,49 @@ export const signupUser = async (c: Context) => {
 }
 
 export const loginUser = async (c: Context) => {
-    const prisma = new PrismaClient({
-        datasourceUrl: c.env.DATABASE_URL
-    }).$extends(withAccelerate())
+    try {
+        const prisma = new PrismaClient({
+            datasourceUrl: c.env.DATABASE_URL
+        }).$extends(withAccelerate())
 
-    const body = await c.req.json();
-    const { username, password } = LoginSchema.parse(body);
+        const body = await c.req.json();
+        const isValid = LoginSchema.safeParse(body);
 
-    if (!body)
+        console.log(isValid.success, body);
 
-        console.log("Inside the login route!");
-    return c.json({ message: 'User Logged In' });
+        if (!body || !isValid.success) {
+            c.json({ message: 'Invalid Inputs' }, 400);
+        }
+
+        const { username, password } = LoginSchema.parse(body);
+
+        const user = await prisma.user.findFirst({
+            where: {
+                username
+            }
+        })
+
+        if (!user) {
+            throw new ApiError(401, 'Invalid Request');
+        }
+
+        console.log(user);
+
+        const hashedPassword = await hashPassword(password, user.salt);
+        if (hashedPassword !== user.password) {
+            throw new ApiError(401, 'Invalid Request');
+        }
+
+        const token = await generateJwtToken(c, user.id);
+        setCookie(c, 'jwt', token, { httpOnly: true, secure: true, sameSite: 'strict' });
+
+        return c.json(new ApiResponse(200, { message: 'User Logged In', token }));
+    } catch (error) {
+        throw new ApiError(401, 'Invalid Request');
+    }
+}
+
+export const logoutUser = async (c: Context) => {
+    setCookie(c, 'jwt', '', { httpOnly: true, secure: true, sameSite: 'strict', expires: new Date(0) });
+    return c.json(new ApiResponse(200, { message: 'User Logged Out' }));
 }
